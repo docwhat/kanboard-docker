@@ -16,7 +16,7 @@ def escape(value):
 
 
 print('<?php')
-for key, value in os.environ.items() :
+for key, value in sorted(os.environ.items()) :
     if key.startswith('KANBOARD_'):
         kbdef = key[9:]
         print("define('%s', %s);" % (kbdef, escape(value)))

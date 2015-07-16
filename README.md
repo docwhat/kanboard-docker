@@ -3,6 +3,13 @@ Kanboard Docker Container
 
 This is a docker container for running [Kanboard](http://kanboard.net).
 
+This container is built automatically and made available on [docker.com's
+registry](https://registry.hub.docker.com/u/docwhat/kanboard/).
+
+You can get it via:
+
+    docker pull docwhat/kanboard
+
 The default user and password are both: `admin`
 
 Configuration

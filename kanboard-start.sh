@@ -1,6 +1,45 @@
 #!/bin/bash
 
-set -eu
+set -euo pipefail
+
+trap _exit_trap EXIT
+trap _err_trap ERR
+_showed_traceback=f
+
+function _exit_trap
+{
+  local _ec="$?"
+  if [[ $_ec != 0 && "${_showed_traceback}" != t ]]; then
+    traceback 1
+  fi
+}
+
+function _err_trap
+{
+  local _ec="$?"
+  local _cmd="${BASH_COMMAND:-unknown}"
+  traceback 1
+  _showed_traceback=t
+  echo "ERROR: The command ${_cmd} exited with exit code ${_ec}." 1>&2
+}
+
+function traceback
+{
+  # Hide the traceback() call.
+  local -i start=$(( ${1:-0} + 1 ))
+  local -i end=${#BASH_SOURCE[@]}
+  local -i i=0
+  local -i j=0
+
+  echo "Traceback (last called is first):" 1>&2
+  for ((i=${start}; i < ${end}; i++)); do
+    j=$(( $i - 1 ))
+    local function="${FUNCNAME[$i]}"
+    local file="${BASH_SOURCE[$i]}"
+    local line="${BASH_LINENO[$j]}"
+    echo "     ${function}() in ${file}:${line}" 1>&2
+  done
+}
 
 # Force the files to be in /data
 export KANBOARD_FILES_DIR=/data/files/
@@ -26,6 +65,38 @@ elif [ "${KANBOARD_DB_DRIVER}" = 'sqlite' ]; then
   touch "${KANBOARD_DB_FILENAME}"
 fi
 
+export APACHE_HOSTNAME=${APACHE_HOSTNAME:-$HOSTNAME}
+
+info "Configure Apache"
+perl \
+  -pi \
+  -e 's/^\s*(ErrorLog|ServerName)/#-> $1/g' \
+  /etc/apache2/apache2.conf
+cat <<APACHE_EXTRA >> /etc/apache2/apache2.conf
+ServerName \${APACHE_HOSTNAME}
+LogLevel debug
+ErrorLog "|/bin/cat"
+APACHE_EXTRA
+
+info "Configure PHP"
+if [[ "${KANBOARD_DEBUG:-false}" = true ]]; then
+  display=On
+  error_reporting='E_ALL'
+else
+  display=Off
+  error_reporting='E_ALL & ~E_DEPRECATED & ~E_STRICT'
+fi
+
+cat <<PHP_EXTRA > /etc/php5/apache2/conf.d/99-kanboard.ini
+error_reporting = ${error_reporting}
+error_log = stderr
+
+html_errors = ${display}
+display_errors = ${display}
+display_startup_errors = ${display}
+PHP_EXTRA
+
+
 info "Setup data directory"
 mkdir -p /data/files/
 chown www-data:www-data -Rc /data /var/www/html/data
@@ -40,7 +111,6 @@ chmod 644 -c /var/www/html/config.php
 
 info "Prepare apache for running"
 export APACHE_CONFDIR=/etc/apache2
-export APACHE_HOSTNAME=$HOSTNAME
 source "${APACHE_CONFDIR}/envvars"
 
 info "Starting Kanboard"

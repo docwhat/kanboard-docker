@@ -2,9 +2,8 @@ FROM ubuntu:trusty
 MAINTAINER Christian Höltje <choltje@us.ibm.com>
 ENV REFRESHED_AT 2015-05-04
 
-# Setup apache and friends.
+# Install packages
 RUN apt-get -qq update && env DEBIAN_FRONTEND=noninteractive apt-get install -y curl git apache2 php5 php5-mysql php5-pgsql php5-sqlite php5-gd php5-ldap && apt-get clean -y
-RUN echo "ServerName \${APACHE_HOSTNAME}" >> /etc/apache2/apache2.conf
 
 # Create the data directory.
 RUN mkdir /data && chown www-data:www-data -R /data && chmod 750 /data

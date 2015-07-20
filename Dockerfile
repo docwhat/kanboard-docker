@@ -12,7 +12,8 @@ RUN mkdir /data && chown www-data:www-data -R /data && chmod 750 /data
 RUN curl -sS https://getcomposer.org/installer | php -- --filename=/usr/local/bin/composer
 
 # Install Source
-RUN cd /var/www && rm -rf html && git clone --depth=1 --branch=v1.0.14 https://github.com/fguillot/kanboard.git html
+ENV KANBOARD_APP_VERSION 1.0.16
+RUN cd /var/www && rm -rf html && git clone --depth=1 --branch=v${KANBOARD_APP_VERSION} https://github.com/fguillot/kanboard.git html
 
 # Build PHP modules
 RUN cd /var/www/html && composer install

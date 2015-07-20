@@ -26,6 +26,16 @@ Would generate the `config.php` line:
 
     define('DEBUG', true);
 
+Kanboard CLI
+------------
+
+The `./kanboard` command line tool can be accessed by just passing arguments to
+the docker container.
+
+To see all commands, for example:
+
+    docker run --rm --env-file=./myconfig.env  docwhat/kanboard list
+
 Linking to mysql or postgres
 ----------------------------
 

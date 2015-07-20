@@ -31,6 +31,7 @@ ENV KANBOARD_ENABLE_HSTS false
 ENV KANBOARD_DB_NAME kanboard
 
 EXPOSE 80
-CMD ["/kanboard-start.sh"]
+ENTRYPOINT ["/kanboard-start.sh"]
+CMD ["start"]
 
 # EOF

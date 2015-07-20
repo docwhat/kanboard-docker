@@ -23,7 +23,7 @@ function _exit_trap
   if [[ $_ec != 0 && "${_showed_traceback}" != t ]]; then
     traceback 1
   fi
-  killall -QUIT tail || :
+  killall -QUIT tail >/dev/null 2>&1 || :
 }
 
 function _err_trap
@@ -33,7 +33,7 @@ function _err_trap
   local _cmd="${BASH_COMMAND:-unknown}"
   traceback 1
   _showed_traceback=t
-  echo "ERROR: The command ${_cmd} exited with exit code ${_ec}." 1>&2
+  err "The command ${_cmd} exited with exit code ${_ec}."
 }
 
 function traceback
@@ -64,6 +64,12 @@ function info
 {
   echo "INFO: $@" 1>&2
 }
+
+function err
+{
+  echo "ERROR: $@" 1>&2
+}
+
 
 # Sets up links for databases.
 if [ "${KANBOARD_DB_DRIVER}" = 'mysql' ]; then
@@ -125,20 +131,29 @@ echo '*********************************'
 chown www-data:www-data -c /var/www/html/config.php
 chmod 644 -c /var/www/html/config.php
 
-info "Prepare apache for running"
-export APACHE_CONFDIR=/etc/apache2
-source "${APACHE_CONFDIR}/envvars"
+if [ "${1:-start}" = 'start' ]; then
+  info "Prepare apache for running"
+  export APACHE_CONFDIR=/etc/apache2
+  source "${APACHE_CONFDIR}/envvars"
 
 
-if [[ "${KANBOARD_DEBUG:-false}" = true ]]; then
-  info "Starting Kanboard in DEBUG mode"
-  mkfifo -m666 /tmp/debug
-  tail -F /tmp/debug &
-  /usr/sbin/apache2 -DFOREGROUND &
-  wait || :
+  if [[ "${KANBOARD_DEBUG:-false}" = true ]]; then
+    info "Starting Kanboard in DEBUG mode"
+    mkfifo -m666 /tmp/debug
+    tail -F /tmp/debug &
+    /usr/sbin/apache2 -DFOREGROUND &
+    wait || :
+  else
+    info "Starting Kanboard"
+    exec /usr/sbin/apache2 -DFOREGROUND
+  fi
+elif [ "${1:-}" = 'bash' ]; then
+  info "Running bash"
+  exec /bin/bash
 else
-  info "Starting Kanboard"
-  exec /usr/sbin/apache2 -DFOREGROUND
+  info "Running: ./kanboard $*"
+  cd /var/www/html
+  exec ./kanboard "$@"
 fi
 
 # EOF

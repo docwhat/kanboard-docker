@@ -129,7 +129,7 @@ chmod u=rwX,g=rwX,o= -Rc /data /var/www/html/data
 
 info "Configure Kanboard"
 echo '*********************************'
-/kanboard-configure.py | tee /var/www/html/config.php
+/kanboard-configure.py | tee /var/www/html/config.php | grep -v PASSWORD
 echo '*********************************'
 chown www-data:www-data -c /var/www/html/config.php
 chmod 644 -c /var/www/html/config.php

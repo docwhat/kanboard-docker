@@ -95,6 +95,9 @@ perl \
   -e 's/^\s*(ErrorLog|ServerName)/#-> $1/g' \
   /etc/apache2/apache2.conf
 cat <<APACHE_EXTRA >> /etc/apache2/apache2.conf
+<Directory /var/www/html>
+  AllowOverride All
+</Directory>
 ServerName \${APACHE_HOSTNAME}
 LogLevel debug
 ErrorLog "|/bin/cat"

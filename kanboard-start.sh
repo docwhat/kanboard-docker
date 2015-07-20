@@ -4,18 +4,31 @@ set -euo pipefail
 
 trap _exit_trap EXIT
 trap _err_trap ERR
+trap _intr_trap INT
 _showed_traceback=f
+
+function _intr_trap
+{
+  echo 1>&2
+  info "Shutting down due to Control-C"
+  trap - EXIT ERR INT
+  killall -TERM -v apache2 || :
+  killall -QUIT -w -v apache2 || :
+}
 
 function _exit_trap
 {
+  trap - EXIT ERR INT
   local _ec="$?"
   if [[ $_ec != 0 && "${_showed_traceback}" != t ]]; then
     traceback 1
   fi
+  killall -QUIT tail || :
 }
 
 function _err_trap
 {
+  trap - EXIT ERR INT
   local _ec="$?"
   local _cmd="${BASH_COMMAND:-unknown}"
   traceback 1
@@ -43,6 +56,9 @@ function traceback
 
 # Force the files to be in /data
 export KANBOARD_FILES_DIR=/data/files/
+
+# Debugging should be sent to the pipe in /tmp/
+export KANBOARD_DEBUG_FILE=/tmp/debug
 
 function info
 {
@@ -113,7 +129,16 @@ info "Prepare apache for running"
 export APACHE_CONFDIR=/etc/apache2
 source "${APACHE_CONFDIR}/envvars"
 
-info "Starting Kanboard"
-exec /usr/sbin/apache2 -DFOREGROUND
+
+if [[ "${KANBOARD_DEBUG:-false}" = true ]]; then
+  info "Starting Kanboard in DEBUG mode"
+  mkfifo -m666 /tmp/debug
+  tail -F /tmp/debug &
+  /usr/sbin/apache2 -DFOREGROUND &
+  wait || :
+else
+  info "Starting Kanboard"
+  exec /usr/sbin/apache2 -DFOREGROUND
+fi
 
 # EOF

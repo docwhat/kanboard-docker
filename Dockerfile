@@ -16,7 +16,7 @@ ENV KANBOARD_APP_VERSION 1.0.16
 RUN cd /var/www && rm -rf html && git clone --depth=1 --branch=v${KANBOARD_APP_VERSION} https://github.com/fguillot/kanboard.git html
 
 # Build PHP modules
-RUN cd /var/www/html && composer install
+RUN cd /var/www/html && composer --prefer-dist --no-dev --optimize-autoloader install
 
 # Tools to configure kanboard and get it started.
 COPY kanboard-configure.py /kanboard-configure.py
